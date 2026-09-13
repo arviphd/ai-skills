@@ -1,6 +1,7 @@
 # Codex customizations
 
-Reusable Codex skills and an optional automatic post-change review hook.
+Reusable Codex skills, an optional automatic post-change review hook, and
+small editor customizations.
 
 A **skill** is a set of instructions that teaches Codex how to run a particular
 workflow. After installing a skill, invoke it by name in a prompt, for example
@@ -20,6 +21,12 @@ and [hooks](https://developers.openai.com/codex/hooks).
 | [`simplify`](skills/simplify/) | Recently changed code works but could be clearer. | Applies conservative, local simplifications while preserving observable behavior and then runs proportionate validation. |
 | [`staged-agent-implementation`](skills/staged-agent-implementation/) | A substantial, already-planned feature should be implemented in user-approved stages. | Delegates one bounded implementation step at a time, verifies it, records concise progress, and pauses before the next stage. |
 | [`auto-review.py`](hooks/auto-review.py) | You want an automatic correctness and simplification pass after Codex changes source code. | Compares repository state at the start and end of a turn and requests one review pass when source or executable code definitely changed. |
+
+## VS Code customizations
+
+| Customization | Purpose |
+| --- | --- |
+| [`antigravity-gemini-sidebar`](vscode/antigravity-gemini-sidebar/) | Moves Google Antigravity from VS Code's Activity Bar to the secondary sidebar beside Chat, Codex, and Claude Code, labeled **Gemini**. Includes guarded apply and verification commands for reapplying the customization after Antigravity updates. |
 
 ## Install the skills
 
