@@ -17,10 +17,10 @@ and [hooks](https://developers.openai.com/codex/hooks).
 | Workflow | Use it when | What it does |
 | --- | --- | --- |
 | [`feature-planning`](skills/feature-planning/) | You have a feature idea that needs discussion and a repository-grounded plan before implementation. | Assesses the idea, resolves material design choices with you, creates a plan only when requested, and reviews the plan for correctness and scope. |
-| [`peer-review`](skills/peer-review/) | A document or code change warrants a bounded adversarial review. | Coordinates Codex with Claude, Gemini, or another Codex agent until both sides agree on the reviewed version or report a clear blocker. |
-| [`simplify`](skills/simplify/) | Recently changed code works but could be clearer. | Applies conservative, local simplifications while preserving observable behavior and then runs proportionate validation. |
 | [`staged-agent-implementation`](skills/staged-agent-implementation/) | A substantial, already-planned feature should be implemented in user-approved stages. | Delegates one bounded implementation step at a time, verifies it, records concise progress, and pauses before the next stage. |
+| [`peer-review`](skills/peer-review/) | A document or code change warrants a bounded adversarial review. | Coordinates Codex with Claude, Gemini, or another Codex agent until both sides agree on the reviewed version or report a clear blocker. |
 | [`auto-review.py`](hooks/auto-review.py) | You want an automatic correctness and simplification pass after Codex changes source code. | Compares repository state at the start and end of a turn and requests one review pass when source or executable code definitely changed. |
+| [`simplify`](skills/simplify/) | Recently changed code works but could be clearer. | Applies conservative, local simplifications while preserving observable behavior and then runs proportionate validation. |
 
 ## VS Code customizations
 
