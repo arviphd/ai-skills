@@ -18,6 +18,7 @@ supports, so Codex and Claude versions of the same workflow sit side by side.
 | Category | Purpose |
 | --- | --- |
 | `coding/` | Software development workflows: planning, staged implementation, review, and cleanup |
+| `quality/` | Checking the quality of an agent's answers before they are sent |
 | `editor/` | Editor customizations (not agent skills) |
 
 ## About skills and hooks
@@ -31,7 +32,7 @@ that can request a review after Codex changes code.
 See the official Codex documentation for [skills](https://developers.openai.com/codex/skills)
 and [hooks](https://developers.openai.com/codex/hooks).
 
-## Included workflows
+## Codex workflows
 
 | Workflow | Use it when | What it does |
 | --- | --- | --- |
@@ -40,6 +41,14 @@ and [hooks](https://developers.openai.com/codex/hooks).
 | [`peer-review`](coding/peer-review/) | A document or code change warrants a bounded adversarial review. | Coordinates Codex with Claude, Gemini, or another Codex agent until both sides agree on the reviewed version or report a clear blocker. |
 | [`auto-review.py`](coding/auto-review/) | You want an automatic correctness and simplification pass after Codex changes source code. | Compares repository state at the start and end of a turn and requests one review pass when source or executable code definitely changed. |
 | [`simplify`](coding/simplify/) | Recently changed code works but could be clearer. | Applies conservative, local simplifications while preserving observable behavior and then runs proportionate validation. |
+
+## Claude skills
+
+| Skill | Use it when | What it does |
+| --- | --- | --- |
+| [`algo-tech-document-review`](coding/algo-tech-document-review/) | A technical plan, spec, design doc, or mathematical formulation (often optimization-heavy, often agent-drafted) needs validating before any code is written. | Runs correctness sweeps interleaved with clarifying questions, de-bloats, re-checks integrity, and round-trips the document to its author for sign-off. |
+| [`algo-tech-implementation`](coding/algo-tech-implementation/) | A substantial or risky feature with a validated spec should be built in reviewed phases through an executor agent such as Claude Code. | Works on a feature branch with on-disk spec, invariants, and progress files; each phase is executed, gated, reviewed, and committed before the next. |
+| [`jev-check`](quality/jev-check/) | You want a draft answer scored before Claude sends it. | Sends the request, draft, and tool evidence to TypeSafe's Jev API, diagnoses weak scores claim by claim, and revises before sending. Requires your own TypeSafe API key (see below). |
 
 ## VS Code customizations
 
@@ -74,9 +83,31 @@ mkdir -p "$HOME/.agents/skills/simplify"
 cp -R coding/simplify/codex/. "$HOME/.agents/skills/simplify/"
 ```
 
-Claude versions (`claude/` folders) install the same way into
-`~/.claude/skills/<skill>/` for Claude Code, or can be zipped and uploaded to
-Claude.
+### Claude skills
+
+For Claude Code, copy each skill's `claude/` folder into `~/.claude/skills/`:
+
+```sh
+for d in */*/claude; do
+  name=$(basename "$(dirname "$d")")
+  mkdir -p "$HOME/.claude/skills/$name"
+  cp -R "$d/." "$HOME/.claude/skills/$name/"
+done
+```
+
+For Claude (web, desktop, or mobile), zip a skill's folder with the skill name
+as the top-level directory and upload it under Settings → Skills:
+
+```sh
+mkdir -p /tmp/skill-zips && cp -R coding/algo-tech-implementation/claude /tmp/skill-zips/algo-tech-implementation
+(cd /tmp/skill-zips && zip -r algo-tech-implementation.zip algo-tech-implementation)
+```
+
+**`jev-check` needs your API key.** The published SKILL.md contains the
+placeholder `<YOUR_TYPESAFE_API_KEY>`. Replace it with your own TypeSafe API
+key in your local copy before installing or uploading, and never commit the
+filled-in file. Until the key is set, the skill tells you it is missing and
+skips the check.
 
 ## Usage examples
 
