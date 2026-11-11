@@ -40,6 +40,21 @@ what.
 
 Each skill's page explains what it does, how to use it, and anything it needs.
 
+## How they fit together
+
+- **In Claude:** have the plan or formulation checked with
+  [spec and formulation review](coding/algo-tech-document-review/), build it
+  with the [phased build](coding/algo-tech-implementation/), and run the
+  [answer check](quality/jev-check/) on the summary you'll send on.
+- **In Codex:** shape the work with [feature planning](coding/feature-planning/),
+  build it with [staged implementation](coding/staged-agent-implementation/),
+  bring in [peer review](coding/peer-review/) at important milestones, and
+  finish with [simplify](coding/simplify/) (or let the
+  [auto-review hook](coding/auto-review/) do the review after each turn).
+
+You can mix the two. For example, review a formulation in Claude, then build
+it in Codex.
+
 ## Try it
 
 Claude picks up a skill on its own when your request matches it. In Codex,
