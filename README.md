@@ -38,22 +38,10 @@ what.
 | Get a review automatically after every coding turn | [Auto-review hook](coding/auto-review/) | Codex | When a turn changes your analysis code, the agent is asked to review and simplify it |
 | Check an answer before the agent sends it | [Answer check](quality/jev-check/) | Claude | Score a summary of results for unsupported claims before it reaches a stakeholder |
 
+Each skill is currently written for the agent shown, but the workflows
+aren't tied to it: you can implement any of them in either Claude or Codex.
+
 Each skill's page explains what it does, how to use it, and anything it needs.
-
-## How they fit together
-
-- **In Claude:** have the plan or formulation checked with
-  [spec and formulation review](coding/algo-tech-document-review/), build it
-  with the [phased build](coding/algo-tech-implementation/), and run the
-  [answer check](quality/jev-check/) on the summary you'll send on.
-- **In Codex:** shape the work with [feature planning](coding/feature-planning/),
-  build it with [staged implementation](coding/staged-agent-implementation/),
-  bring in [peer review](coding/peer-review/) at important milestones, and
-  finish with [simplify](coding/simplify/) (or let the
-  [auto-review hook](coding/auto-review/) do the review after each turn).
-
-You can mix the two. For example, review a formulation in Claude, then build
-it in Codex.
 
 ## Try it
 
