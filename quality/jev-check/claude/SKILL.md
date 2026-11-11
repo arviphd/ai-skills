@@ -1,9 +1,9 @@
 ---
 name: "jev-check"
-description: "Run the Jev quality check on a draft answer before sending it. Use when the user chooses \"Check with Jev\" or types /jev-check."
+description: "Score a draft answer with TypeSafe's Jev quality model before sending it, find which claims are weak, and revise. Use when the user asks to check, verify or score a draft answer with Jev, chooses \"Check with Jev\", or types /jev-check."
 ---
 
-# Jev output check (Claude cloud workspace)
+# Jev output check
 
 This calls TypeSafe's Jev API at `api.typesafe.ai`, using the user's API key below. Use it only in the run command; never show it in a reply.
 

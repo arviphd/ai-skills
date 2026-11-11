@@ -1,240 +1,88 @@
-# AI skills
+# AI skills for careful analytics work
 
-Reusable skills for AI coding and research agents (Codex, Claude), plus
-agent hooks and small editor customizations.
+AI agents such as Claude and Codex write analysis and model code quickly, but
+left to themselves they tend to skip the discipline: they don't question the
+formulation, they build everything in one go, and they rarely check their own
+work. The skills in this repo add those missing steps, so an agent works the
+way a careful analyst would:
 
-## Repository layout
-
-Skills are grouped by purpose. Each skill has one subfolder per AI agent it
-supports, so Codex and Claude versions of the same workflow sit side by side.
-
-```text
-<category>/
-  <skill>/
-    codex/    Codex version (SKILL.md, agents/openai.yaml, or hook files)
-    claude/   Claude version (SKILL.md), when one exists
+```mermaid
+flowchart LR
+    A[Idea or problem] --> B[Plan it]
+    B --> C[Review the plan<br/>or formulation]
+    C --> D[Build in<br/>small stages]
+    D --> E[Review and<br/>simplify]
+    E --> F[Check the answer<br/>before sending]
 ```
 
-| Category | Purpose |
+They work for data science, forecasting, optimization and operations research
+projects as well as for ordinary software. The code they produce is meant to
+be read and maintained by analysts and researchers, not just professional
+developers.
+
+## What's here
+
+| When you want to… | Skill | Agent | Analytics example |
+| --- | --- | --- | --- |
+| Think a project through before any code is written | [Feature planning](coding/feature-planning/) | Codex | Decide how a demand-forecasting pipeline should handle new products before building it |
+| Catch errors in a plan, spec or mathematical formulation | [Spec and formulation review](coding/algo-tech-document-review/) | Claude | Check an LP/MIP model for wrong indices, missing constraints and unit mix-ups |
+| Build something substantial one checked stage at a time | [Staged implementation](coding/staged-agent-implementation/) | Codex | Build a churn model: data prep, features, training, evaluation, each reviewed before the next |
+| | [Phased build from a validated spec](coding/algo-tech-implementation/) | Claude | Implement a reviewed allocation model in phases, with plain, readable code |
+| Get a second, independent opinion | [Peer review](coding/peer-review/) | Codex (with Claude, Gemini or Codex as reviewer) | Have a second agent challenge a SQL query, notebook or model write-up |
+| Tidy working code without changing its results | [Simplify](coding/simplify/) | Codex | Clean up a messy pandas script while keeping its output identical |
+| Get a review automatically after every coding turn | [Auto-review hook](coding/auto-review/) | Codex | Every time the agent edits your analysis code, it re-checks and simplifies it |
+| Check an answer before the agent sends it | [Answer check](quality/jev-check/) | Claude | Score a summary of results for unsupported claims before it reaches a stakeholder |
+
+Each skill's page explains what it does, how to use it, and anything it needs.
+
+## Try it
+
+Claude picks up a skill on its own when your request matches it. In Codex,
+you name the skill with `$skill-name`.
+
+```text
+Review this facility-location formulation before we code it. Check every index,
+constraint and unit, and ask me about anything that's ambiguous.
+```
+
+```text
+Use $staged-agent-implementation to build the forecasting pipeline in
+docs/forecast_plan.md one stage at a time. Show me the stages first and wait
+for my go-ahead before each one.
+```
+
+```text
+Use $simplify on clean_sales.py. The output CSV must stay exactly the same.
+```
+
+## Get the skills
+
+- **Claude app (web, desktop, mobile):** download a skill's zip from the
+  [latest release](https://github.com/arviphd/ai-skills/releases/tag/skills)
+  and upload it in Claude under **Customize → Skills → + → Create skill →
+  Upload a skill**.
+- **Claude Code or Codex:** clone the repo and copy the skills you want into
+  your skills folder. See [INSTALL.md](INSTALL.md) for one-line commands for
+  macOS, Linux and Windows.
+
+## How the repo is organised
+
+Skills are grouped by purpose. Inside each skill there is one folder per AI
+agent, so the Claude and Codex versions sit side by side:
+
+```text
+coding/peer-review/
+  README.md     what the skill does and how to use it
+  codex/        the Codex version
+  claude/       the Claude version, when there is one
+```
+
+| Folder | What's in it |
 | --- | --- |
-| `coding/` | Software development workflows: planning, staged implementation, review, and cleanup |
-| `quality/` | Checking the quality of an agent's answers before they are sent |
-| `editor/` | Editor customizations (not agent skills) |
+| `coding/` | Planning, building and reviewing analysis, model and software projects |
+| `quality/` | Checking an agent's answers before they are sent |
+| `editor/` | A small VS Code customization ([details](editor/vscode/antigravity-gemini-sidebar/)) |
 
-## About skills and hooks
+## License
 
-A **skill** is a set of instructions that teaches Codex how to run a particular
-workflow. After installing a skill, invoke it by name in a prompt, for example
-`Use $simplify to clean up the files changed in this branch.` Skills do not run
-continuously in the background. The hook is separate executable automation
-that can request a review after Codex changes code.
-
-See the official Codex documentation for [skills](https://developers.openai.com/codex/skills)
-and [hooks](https://developers.openai.com/codex/hooks).
-
-## Codex workflows
-
-| Workflow | Use it when | What it does |
-| --- | --- | --- |
-| [`feature-planning`](coding/feature-planning/) | You have a feature idea that needs discussion and a repository-grounded plan before implementation. | Assesses the idea, resolves material design choices with you, creates a plan only when requested, and reviews the plan for correctness and scope. |
-| [`staged-agent-implementation`](coding/staged-agent-implementation/) | A substantial, already-planned feature should be implemented in user-approved stages. | Delegates one bounded implementation step at a time, verifies it, records concise progress, and pauses before the next stage. |
-| [`peer-review`](coding/peer-review/) | A document or code change warrants a bounded adversarial review. | Coordinates Codex with Claude, Gemini, or another Codex agent until both sides agree on the reviewed version or report a clear blocker. |
-| [`auto-review.py`](coding/auto-review/) | You want an automatic correctness and simplification pass after Codex changes source code. | Compares repository state at the start and end of a turn and requests one review pass when source or executable code definitely changed. |
-| [`simplify`](coding/simplify/) | Recently changed code works but could be clearer. | Applies conservative, local simplifications while preserving observable behavior and then runs proportionate validation. |
-
-## Claude skills
-
-| Skill | Use it when | What it does |
-| --- | --- | --- |
-| [`algo-tech-document-review`](coding/algo-tech-document-review/) | A technical plan, spec, design doc, or mathematical formulation (often optimization-heavy, often agent-drafted) needs validating before any code is written. | Runs correctness sweeps interleaved with clarifying questions, de-bloats, re-checks integrity, and round-trips the document to its author for sign-off. |
-| [`algo-tech-implementation`](coding/algo-tech-implementation/) | A substantial or risky feature with a validated spec should be built in reviewed phases through an executor agent such as Claude Code. | Works on a feature branch with on-disk spec, invariants, and progress files; each phase is executed, gated, reviewed, and committed before the next. |
-| [`jev-check`](quality/jev-check/) | You want a draft answer scored before Claude sends it. | Sends the request, draft, and tool evidence to TypeSafe's Jev API, diagnoses weak scores claim by claim, and revises before sending. Requires your own TypeSafe API key (see below). |
-
-## VS Code customizations
-
-| Customization | Purpose |
-| --- | --- |
-| [`antigravity-gemini-sidebar`](editor/vscode/antigravity-gemini-sidebar/) | Moves Google Antigravity from VS Code's Activity Bar to the secondary sidebar beside Chat, Codex, and Claude Code, labeled **Gemini**. Includes guarded apply and verification commands for reapplying the customization after Antigravity updates. |
-
-## Install the skills
-
-Clone the repository, then copy each skill's `codex/` folder into a user-level
-skill location, naming the target directory after the skill:
-
-```sh
-git clone https://github.com/arviphd/ai-skills.git
-cd ai-skills
-for d in */*/codex; do
-  [ -f "$d/SKILL.md" ] || continue          # skip hooks
-  name=$(basename "$(dirname "$d")")
-  mkdir -p "$HOME/.agents/skills/$name"
-  cp -R "$d/." "$HOME/.agents/skills/$name/"
-done
-```
-
-Codex detects skill changes automatically. Restart Codex if newly installed
-skills are not discovered immediately. For repository-scoped installation,
-copy into `<repo>/.agents/skills/<skill>/` instead.
-
-To install only one skill, copy only its `codex/` folder. For example:
-
-```sh
-mkdir -p "$HOME/.agents/skills/simplify"
-cp -R coding/simplify/codex/. "$HOME/.agents/skills/simplify/"
-```
-
-### Claude skills
-
-For Claude Code, copy each skill's `claude/` folder into `~/.claude/skills/`:
-
-```sh
-for d in */*/claude; do
-  name=$(basename "$(dirname "$d")")
-  mkdir -p "$HOME/.claude/skills/$name"
-  cp -R "$d/." "$HOME/.claude/skills/$name/"
-done
-```
-
-For Claude (web, desktop, or mobile), zip a skill's folder with the skill name
-as the top-level directory and upload it under Settings → Skills:
-
-```sh
-mkdir -p /tmp/skill-zips && cp -R coding/algo-tech-implementation/claude /tmp/skill-zips/algo-tech-implementation
-(cd /tmp/skill-zips && zip -r algo-tech-implementation.zip algo-tech-implementation)
-```
-
-**`jev-check` needs your API key.** The published SKILL.md contains the
-placeholder `<YOUR_TYPESAFE_API_KEY>`. Replace it with your own TypeSafe API
-key in your local copy before installing or uploading, and never commit the
-filled-in file. Until the key is set, the skill tells you it is missing and
-skips the check.
-
-## Usage examples
-
-Invoke a skill explicitly with `$skill-name`, and include the target and any
-important constraints in the same prompt.
-
-### Plan a feature before writing code
-
-Start with assessment rather than immediately asking for a plan:
-
-```text
-Use $feature-planning to assess adding offline sync to this application.
-Discuss the design and trade-offs with me first; do not create the plan yet.
-```
-
-After resolving the important choices:
-
-```text
-Create the implementation plan now and save it under docs/plans/.
-```
-
-The skill preserves the accepted decisions across the discussion, creates one
-canonical plan, and subjects it to focused correctness and scope reviews.
-
-### Run an adversarial peer review
-
-Use a Codex subagent as the independent reviewer:
-
-```text
-Use $peer-review Codex to review docs/offline-sync-plan.md. Fix confirmed
-material findings, but do not broaden the accepted feature scope.
-```
-
-You can select Claude or Gemini instead:
-
-```text
-Use $peer-review Claude to review the current branch diff.
-```
-
-Claude and Gemini workflows require the corresponding environment to be
-available. The skill uses a hash-bound Markdown ledger when the reviewer cannot
-coordinate directly with Codex, preserving findings and approvals across
-turns.
-
-### Simplify changed code without redesigning it
-
-```text
-Use $simplify on src/parser.py and its changed tests. Preserve public APIs,
-error behavior, output formatting, and performance characteristics.
-```
-
-The skill intentionally prefers a no-op over speculative cleanup. It does not
-authorize feature work, bug fixes, broad refactors, or unrelated edits.
-
-### Implement an approved plan in stages
-
-```text
-Use $staged-agent-implementation to implement docs/offline-sync-plan.md one
-substantive step at a time. Show me the stage breakdown and wait for approval
-before Step 1.
-```
-
-After reviewing a completed stage, authorize the next one explicitly:
-
-```text
-Proceed with Step 2.
-```
-
-This workflow is intended for substantial features with an already-reviewed
-design. Small, self-contained changes generally do not need its ceremony.
-
-## Install the optional automatic review hook
-
-The hook is designed for macOS and requires Python 3, Git, and a Codex version
-that supports lifecycle hooks. It is fail-open: unexpected hook errors do not
-prevent Codex from finishing a turn.
-
-```sh
-mkdir -p "$HOME/.codex/hooks"
-cp coding/auto-review/codex/auto-review.py "$HOME/.codex/hooks/auto-review.py"
-cp coding/auto-review/codex/hooks.json "$HOME/.codex/hooks.json"
-```
-
-`hooks.json` is a complete example configuration. The last command replaces an
-existing user hook configuration, so merge its `UserPromptSubmit` and `Stop`
-entries manually if you already use other hooks.
-
-After installing or changing the hook, open `/hooks` in Codex to review and
-trust the exact hook definition. Codex skips untrusted user hooks.
-
-At the start of a turn, the hook records a bounded snapshot of relevant Git
-state. At the end, it requests one correctness-first review followed by
-`$simplify` only when it can establish that source or executable code changed.
-It ignores documentation-only changes and avoids claiming uncertain files as
-definite code changes.
-
-Optional environment variables control its limits:
-
-| Variable | Default | Purpose |
-| --- | ---: | --- |
-| `CODEX_AUTO_REVIEW_MAX_CANDIDATES` | `50` | Maximum candidate paths considered in one turn. |
-| `CODEX_AUTO_REVIEW_MAX_FILE_BYTES` | `26214400` | Maximum size of a worktree file inspected by the hook. |
-| `CODEX_AUTO_REVIEW_MAX_DISPLAY_PATHS` | `40` | Maximum changed paths included in the generated review request. |
-| `CODEX_AUTO_REVIEW_STATE_TTL_DAYS` | `7` | Age after which stale hook state is removed. |
-| `CODEX_AUTO_REVIEW_STATE_DIR` | `~/Library/Caches/CodexAutoReview/state` | Override for temporary hook state. |
-
-## Choosing a workflow
-
-- Still deciding what to build: use `feature-planning`.
-- Plan accepted and implementation is substantial: use
-  `staged-agent-implementation`.
-- Need an independent challenge to code or a document: use `peer-review`.
-- Working code only needs conservative cleanup: use `simplify`.
-- Want review to be requested automatically after coding turns: install the
-  hook.
-
-These workflows can be combined deliberately. For example, plan with
-`feature-planning`, implement the accepted plan with
-`staged-agent-implementation`, and use `peer-review` for a high-risk milestone.
-Avoid invoking several overlapping workflows in one prompt unless their order
-and scope are clear.
-
-Generated review ledgers, local backups, caches, credentials, sessions, and
-other machine-local Codex state are intentionally excluded from this
-repository.
-
-## Maintenance
-
-Keep reusable source files here. Do not add generated handoff ledgers or
-machine-local Codex state.
+[MIT](LICENSE): free to use, adapt and share.
