@@ -23,7 +23,7 @@ fully quit VS Code with **Cmd+Q** and reopen it afterward. `Developer: Reload
 Window` may retain the old extension scan in the shared process.
 
 ```sh
-python3 vscode/antigravity-gemini-sidebar/apply.py
+python3 editor/vscode/antigravity-gemini-sidebar/apply.py
 ```
 
 The script:
@@ -48,7 +48,7 @@ does not add duplicate layout entries.
 After fully quitting and reopening VS Code:
 
 ```sh
-python3 vscode/antigravity-gemini-sidebar/apply.py --check
+python3 editor/vscode/antigravity-gemini-sidebar/apply.py --check
 ```
 
 Successful verification ends with `Gemini customization: OK`.
@@ -58,7 +58,7 @@ Successful verification ends with `Gemini customization: OK`.
 Override discovery when needed:
 
 ```sh
-python3 vscode/antigravity-gemini-sidebar/apply.py \
+python3 editor/vscode/antigravity-gemini-sidebar/apply.py \
   --extension-dir /path/to/google.google-antigravity-1.3.0 \
   --user-data-dir "/path/to/Code/User"
 ```
