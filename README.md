@@ -1,10 +1,12 @@
 # AI skills for careful analytics work
 
+*For people using AI agents in analytical work.*
+
 AI agents such as Claude and Codex write analysis and model code quickly, but
 left to themselves they tend to skip the discipline: they don't question the
 formulation, they build everything in one go, and they rarely check their own
-work. The skills in this repo add those missing steps, so an agent works the
-way a careful analyst would:
+work. The skills in this repo add those missing steps, so an agent works more
+like a careful analyst would:
 
 ```mermaid
 flowchart LR
@@ -15,10 +17,13 @@ flowchart LR
     E --> F[Check the answer<br/>before sending]
 ```
 
-They work for data science, forecasting, optimization and operations research
-projects as well as for ordinary software. The code they produce is meant to
-be read and maintained by analysts and researchers, not just professional
-developers.
+They are useful for data science, forecasting, optimization and operations
+research projects as well as ordinary software. They structure how the agent
+plans, builds and reviews; they don't choose the right method or guarantee
+correct results for you.
+
+Some skills need extra setup or an external service; each skill's page says
+what.
 
 ## What's here
 
@@ -30,7 +35,7 @@ developers.
 | | [Phased build from a validated spec](coding/algo-tech-implementation/) | Claude | Implement a reviewed allocation model in phases, with plain, readable code |
 | Get a second, independent opinion | [Peer review](coding/peer-review/) | Codex (with Claude, Gemini or Codex as reviewer) | Have a second agent challenge a SQL query, notebook or model write-up |
 | Tidy working code without changing its results | [Simplify](coding/simplify/) | Codex | Clean up a messy pandas script while keeping its output identical |
-| Get a review automatically after every coding turn | [Auto-review hook](coding/auto-review/) | Codex | Every time the agent edits your analysis code, it re-checks and simplifies it |
+| Get a review automatically after every coding turn | [Auto-review hook](coding/auto-review/) | Codex | When a turn changes your analysis code, the agent is asked to review and simplify it |
 | Check an answer before the agent sends it | [Answer check](quality/jev-check/) | Claude | Score a summary of results for unsupported claims before it reaches a stakeholder |
 
 Each skill's page explains what it does, how to use it, and anything it needs.

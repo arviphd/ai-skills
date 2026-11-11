@@ -3,7 +3,7 @@
 **Think a project through with the agent before any code is written.**
 
 Agents like to jump straight into building. This skill makes Codex slow down:
-it first assesses the idea against your actual code and data, talks through
+it first assesses the idea against your existing code, talks through
 the important design choices with you, and only writes a plan when you ask for
 one. It then reviews that plan for correctness and for scope creep, so the plan
 you end up with does what you agreed and nothing more.
