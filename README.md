@@ -20,8 +20,7 @@ flowchart LR
 They are useful for data science, forecasting, optimization and operations
 research projects as well as ordinary software. They structure how the agent
 plans, builds and reviews; they don't choose the right method or guarantee
-correct results for you. Each one comes from a workflow used in real
-analytics and optimization projects.
+correct results for you. They come from workflows used in real projects.
 
 Some skills need extra setup or an external service; each skill's page says
 what.
