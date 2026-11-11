@@ -17,10 +17,7 @@ supports, so Codex and Claude versions of the same workflow sit side by side.
 
 | Category | Purpose |
 | --- | --- |
-| `planning/` | Shape and plan work before building it |
-| `implementation/` | Build planned work in controlled stages |
-| `review/` | Independent or automatic review of documents and code |
-| `code-quality/` | Clean up working code without changing behavior |
+| `coding/` | Software development workflows: planning, staged implementation, review, and cleanup |
 | `editor/` | Editor customizations (not agent skills) |
 
 ## About skills and hooks
@@ -38,11 +35,11 @@ and [hooks](https://developers.openai.com/codex/hooks).
 
 | Workflow | Use it when | What it does |
 | --- | --- | --- |
-| [`feature-planning`](planning/feature-planning/) | You have a feature idea that needs discussion and a repository-grounded plan before implementation. | Assesses the idea, resolves material design choices with you, creates a plan only when requested, and reviews the plan for correctness and scope. |
-| [`staged-agent-implementation`](implementation/staged-agent-implementation/) | A substantial, already-planned feature should be implemented in user-approved stages. | Delegates one bounded implementation step at a time, verifies it, records concise progress, and pauses before the next stage. |
-| [`peer-review`](review/peer-review/) | A document or code change warrants a bounded adversarial review. | Coordinates Codex with Claude, Gemini, or another Codex agent until both sides agree on the reviewed version or report a clear blocker. |
-| [`auto-review.py`](review/auto-review/) | You want an automatic correctness and simplification pass after Codex changes source code. | Compares repository state at the start and end of a turn and requests one review pass when source or executable code definitely changed. |
-| [`simplify`](code-quality/simplify/) | Recently changed code works but could be clearer. | Applies conservative, local simplifications while preserving observable behavior and then runs proportionate validation. |
+| [`feature-planning`](coding/feature-planning/) | You have a feature idea that needs discussion and a repository-grounded plan before implementation. | Assesses the idea, resolves material design choices with you, creates a plan only when requested, and reviews the plan for correctness and scope. |
+| [`staged-agent-implementation`](coding/staged-agent-implementation/) | A substantial, already-planned feature should be implemented in user-approved stages. | Delegates one bounded implementation step at a time, verifies it, records concise progress, and pauses before the next stage. |
+| [`peer-review`](coding/peer-review/) | A document or code change warrants a bounded adversarial review. | Coordinates Codex with Claude, Gemini, or another Codex agent until both sides agree on the reviewed version or report a clear blocker. |
+| [`auto-review.py`](coding/auto-review/) | You want an automatic correctness and simplification pass after Codex changes source code. | Compares repository state at the start and end of a turn and requests one review pass when source or executable code definitely changed. |
+| [`simplify`](coding/simplify/) | Recently changed code works but could be clearer. | Applies conservative, local simplifications while preserving observable behavior and then runs proportionate validation. |
 
 ## VS Code customizations
 
@@ -74,7 +71,7 @@ To install only one skill, copy only its `codex/` folder. For example:
 
 ```sh
 mkdir -p "$HOME/.agents/skills/simplify"
-cp -R code-quality/simplify/codex/. "$HOME/.agents/skills/simplify/"
+cp -R coding/simplify/codex/. "$HOME/.agents/skills/simplify/"
 ```
 
 Claude versions (`claude/` folders) install the same way into
@@ -159,8 +156,8 @@ prevent Codex from finishing a turn.
 
 ```sh
 mkdir -p "$HOME/.codex/hooks"
-cp review/auto-review/codex/auto-review.py "$HOME/.codex/hooks/auto-review.py"
-cp review/auto-review/codex/hooks.json "$HOME/.codex/hooks.json"
+cp coding/auto-review/codex/auto-review.py "$HOME/.codex/hooks/auto-review.py"
+cp coding/auto-review/codex/hooks.json "$HOME/.codex/hooks.json"
 ```
 
 `hooks.json` is a complete example configuration. The last command replaces an
