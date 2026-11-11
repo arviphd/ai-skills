@@ -1,7 +1,23 @@
-# Codex customizations
+# AI skills
 
-Reusable Codex skills, an optional automatic post-change review hook, and
-small editor customizations.
+Reusable skills for AI coding and research agents (Codex, Claude), plus
+agent hooks and small editor customizations.
+
+## Repository layout
+
+```text
+skills/
+  codex/    Codex skills (SKILL.md + agents/openai.yaml)
+  claude/   Claude skills (SKILL.md, uploadable to Claude or Claude Code)
+hooks/
+  codex/    Codex lifecycle hooks
+vscode/     VS Code customizations
+```
+
+Each skill lives in its own directory named after the skill, containing a
+`SKILL.md` and any supporting files.
+
+## Codex skills
 
 A **skill** is a set of instructions that teaches Codex how to run a particular
 workflow. After installing a skill, invoke it by name in a prompt, for example
@@ -16,11 +32,11 @@ and [hooks](https://developers.openai.com/codex/hooks).
 
 | Workflow | Use it when | What it does |
 | --- | --- | --- |
-| [`feature-planning`](skills/feature-planning/) | You have a feature idea that needs discussion and a repository-grounded plan before implementation. | Assesses the idea, resolves material design choices with you, creates a plan only when requested, and reviews the plan for correctness and scope. |
-| [`staged-agent-implementation`](skills/staged-agent-implementation/) | A substantial, already-planned feature should be implemented in user-approved stages. | Delegates one bounded implementation step at a time, verifies it, records concise progress, and pauses before the next stage. |
-| [`peer-review`](skills/peer-review/) | A document or code change warrants a bounded adversarial review. | Coordinates Codex with Claude, Gemini, or another Codex agent until both sides agree on the reviewed version or report a clear blocker. |
-| [`auto-review.py`](hooks/auto-review.py) | You want an automatic correctness and simplification pass after Codex changes source code. | Compares repository state at the start and end of a turn and requests one review pass when source or executable code definitely changed. |
-| [`simplify`](skills/simplify/) | Recently changed code works but could be clearer. | Applies conservative, local simplifications while preserving observable behavior and then runs proportionate validation. |
+| [`feature-planning`](skills/codex/feature-planning/) | You have a feature idea that needs discussion and a repository-grounded plan before implementation. | Assesses the idea, resolves material design choices with you, creates a plan only when requested, and reviews the plan for correctness and scope. |
+| [`staged-agent-implementation`](skills/codex/staged-agent-implementation/) | A substantial, already-planned feature should be implemented in user-approved stages. | Delegates one bounded implementation step at a time, verifies it, records concise progress, and pauses before the next stage. |
+| [`peer-review`](skills/codex/peer-review/) | A document or code change warrants a bounded adversarial review. | Coordinates Codex with Claude, Gemini, or another Codex agent until both sides agree on the reviewed version or report a clear blocker. |
+| [`auto-review.py`](hooks/codex/auto-review.py) | You want an automatic correctness and simplification pass after Codex changes source code. | Compares repository state at the start and end of a turn and requests one review pass when source or executable code definitely changed. |
+| [`simplify`](skills/codex/simplify/) | Recently changed code works but could be clearer. | Applies conservative, local simplifications while preserving observable behavior and then runs proportionate validation. |
 
 ## VS Code customizations
 
@@ -34,10 +50,10 @@ Clone the repository, then copy the skill directories into a user-level skill
 location:
 
 ```sh
-git clone https://github.com/arviphd/codex-customizations.git
-cd codex-customizations
+git clone https://github.com/arviphd/ai-skills.git
+cd ai-skills
 mkdir -p "$HOME/.agents/skills"
-cp -R skills/* "$HOME/.agents/skills/"
+cp -R skills/codex/* "$HOME/.agents/skills/"
 ```
 
 Codex detects skill changes automatically. Restart Codex if newly installed
@@ -47,7 +63,7 @@ copy the selected directories into `<repo>/.agents/skills/` instead.
 To install only one skill, copy only its directory. For example:
 
 ```sh
-cp -R skills/simplify "$HOME/.agents/skills/"
+cp -R skills/codex/simplify "$HOME/.agents/skills/"
 ```
 
 ## Usage examples
@@ -128,8 +144,8 @@ prevent Codex from finishing a turn.
 
 ```sh
 mkdir -p "$HOME/.codex/hooks"
-cp hooks/auto-review.py "$HOME/.codex/hooks/auto-review.py"
-cp hooks/hooks.json "$HOME/.codex/hooks.json"
+cp hooks/codex/auto-review.py "$HOME/.codex/hooks/auto-review.py"
+cp hooks/codex/hooks.json "$HOME/.codex/hooks.json"
 ```
 
 `hooks.json` is a complete example configuration. The last command replaces an
