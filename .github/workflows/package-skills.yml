@@ -1,0 +1,41 @@
+# Builds a ready-to-upload zip for every Claude skill and attaches them to the
+# "skills" release, so Claude app users can download and upload without git.
+name: Package Claude skills
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "*/*/claude/**"
+      - ".github/workflows/package-skills.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build zips
+        run: |
+          mkdir -p dist stage
+          for d in */*/claude; do
+            name=$(basename "$(dirname "$d")")
+            cp -R "$d" "stage/$name"
+            (cd stage && zip -qr "../dist/$name.zip" "$name")
+          done
+          ls -l dist
+
+      - name: Publish to the "skills" release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if ! gh release view skills >/dev/null 2>&1; then
+            gh release create skills \
+              --title "Claude skills (latest)" \
+              --notes "Ready-to-upload zips of the Claude skills, rebuilt whenever they change on main. Download one and upload it in Claude under Customize → Skills. See INSTALL.md for details."
+          fi
+          gh release upload skills dist/*.zip --clobber
