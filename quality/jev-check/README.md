@@ -2,13 +2,20 @@
 
 **Check an answer before Claude sends it.**
 
-Before Claude gives you its final answer, this skill has the draft scored by
+Before Claude gives you its final answer, this skill has the draft checked by
 Jev, a quality-checking model from [TypeSafe](https://typesafe.ai). Jev looks
 at whether the draft answers what you asked, makes claims the evidence
 doesn't support, contradicts the output of the tools Claude used, or leaves
-out a warning you need. If any score is weak, Claude breaks the draft into
+out a warning you need. If the draft doesn't pass, Claude breaks it into
 individual claims, finds the ones Jev flags, fixes them, and checks again.
-The answer arrives with a one-line summary of its scores.
+
+The answer arrives with a short note in plain words. Usually that's one line,
+such as "Jev check: passed, no concerns." When Jev wasn't sure, the note lists
+up to three points worth checking yourself, for example a figure Jev couldn't
+verify or a warning in the tool output that the answer left out.
+
+Jev only checks the points Claude puts to it. It doesn't find other problems
+on its own, and it doesn't judge whether the advice itself is good.
 
 Available for: **Claude** ([`claude/`](claude/))
 
