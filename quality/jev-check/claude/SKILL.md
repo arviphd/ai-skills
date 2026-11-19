@@ -15,13 +15,13 @@ If the line above still shows the placeholder `<YOUR_TYPESAFE_API_KEY>`, do not 
 
 Do all Jev work in its own folder, `/tmp/jev-check` (create it if needed), never in the user's project or working folder, so no user file is overwritten and nothing is left behind. Every file named below lives in that folder.
 
-Before each check, run `grep -q '^SCRIPT_VERSION = "6"' /tmp/jev-check/jev-check.py`. If it fails (no file, or a copy from another version of this skill), write `jev-check.py` there with the exact contents in "The script" below, overwriting any existing copy. If it succeeds, reuse the file as is.
+Before each check, run `grep -q '^SCRIPT_VERSION = "9"' /tmp/jev-check/jev-check.py`. If it fails (no file, or a copy from another version of this skill), write `jev-check.py` there with the exact contents in "The script" below, overwriting any existing copy. If it succeeds, reuse the file as is.
 
 ## 2. Write the inputs
 
 Write the user's request to `request.txt` and your draft answer to `draft.txt`.
 
-`request.txt` is the user's latest message, verbatim. Jev sees nothing else of the conversation, so add a line starting `(Context: ...)` whenever the message relies on earlier turns (for example "proceed", "do it", "fix 1-8") or on facts Jev cannot know. State plainly what the message refers to. Keep it to facts from the conversation; never argue for the draft.
+`request.txt` is the user's latest message, verbatim. Jev sees nothing else of the conversation, so add a line starting `(Context: ...)` whenever the message relies on earlier turns (for example "proceed", "do it", "fix 1-8") or on facts Jev cannot know. State plainly what the message refers to. If the message quotes someone else's requests (feedback, an email, a ticket), say what the user is actually asking for, for example "(Context: the user asks whether these points are already handled, not for them to be built now.)". Keep it to facts from the conversation; never argue for the draft.
 
 If you used tools for the task, also write `evidence.txt` with their actual output, copied as-is, not summarized:
 - commands: each command followed by its output;
@@ -41,41 +41,54 @@ Jev scores the draft only against what `evidence.txt` shows, so:
 cd /tmp/jev-check && TYPESAFE_API_KEY="<API key above>" python3 jev-check.py --request request.txt --draft draft.txt --evidence evidence.txt
 ```
 
-Leave out `--evidence` when no tools were used. It normally takes about a second; if it runs longer than 60 seconds, stop it and report a failure. It prints one JSON line with `addresses_request`, `contradicted_by_evidence`, `hidden_errors`, `unsupported_claims` (each 0 to 1), `clarity` (0 to 2), `clarity_confusing` (0 to 1: the probability that the draft is confusing) and `missing_caveat` (0 to 1: the draft leaves out a warning the user needs to act safely or correctly). `contradicted_by_evidence` and `hidden_errors` are only checked against tool output, so both are null when no evidence was given; ignore them then. When no evidence was given, `unsupported_claims` is the higher of two separate checks, shown in `unsupported_parts`: `wrong_or_invented` (states something that looks wrong or made up) and `unshown_work` (claims work was done or verified without showing it). Evidence longer than 30,000 characters is trimmed to its start and end before sending.
+Leave out `--evidence` when no tools were used. It normally takes about a second; if it runs longer than 60 seconds, stop it and report a failure. Evidence over 30,000 characters is trimmed to its start and end before sending.
+
+It prints one JSON line. The script applies the limits itself; act on these fields:
+- `verdict`: `pass` or `revise`; `failed` lists the checks over their limit.
+- `shaky`: true when the verdict rests on scores Jev could not settle (a yes/no score between 0.3 and 0.7, or clarity with no level at a probability of 0.7). A `revise` is shaky when every failed check is unsettled; a `pass` is shaky when any check is unsettled. `shaky_because` lists those checks.
+
+The other fields are the raw scores; use them only if the user asks for numbers.
 
 ## 4. Revise if needed
 
-Revise the draft and run the check once more if any of these hold:
-- `addresses_request` < 0.7
-- `contradicted_by_evidence` > 0.5 or `hidden_errors` > 0.5 (skip either one when it is null)
-- `unsupported_claims` > 0.7
-- `clarity` < 1.5 or `clarity_confusing` > 0.3
-- `missing_caveat` > 0.7
+Revise the draft and run the check once more if `verdict` is `revise`, even when it is shaky.
 
 Before revising, find out what Jev is flagging. Jev returns scores only, never reasons, so do not guess.
 
 **Diagnose.**
 1. Write `claims.txt`: one specific, standalone claim from the draft per line (about 8-20). If `hidden_errors`, `missing_caveat` or `addresses_request` failed, also add 3-6 lines of the form `caveat: that <something the user may need to know>`, naming possible omissions: limitations, approximations, things left unfixed, things the evidence cannot verify.
-2. Run the step 3 command with `--claims claims.txt` added (with or without `--evidence`, matching step 3). It prints one JSON line per item, worst first: `{"claim", "contradicted", "unsupported", "wrong_or_invented"}` for claims when evidence was given, `{"claim", "wrong_or_invented"}` for claims when it was not, and `{"caveat", "omitted"}` for caveats. A last line, `{"unbacked_handling": ..., "probabilities": {...}}`, says how the draft as a whole treats things it cannot back up: `all_backed`, `left_out`, `flagged_unknown`, `hedged` or `stated_as_fact` (the most likely one is named; all five probabilities are listed). It only guides the fix below; it never decides pass or fail.
+2. Run the step 3 command with `--claims claims.txt` added (with or without `--evidence`, matching step 3). It prints one JSON line per item, worst first: `{"claim", "contradicted", "unsupported", "wrong_or_invented", "cannot_check"}` for claims when evidence was given, `{"claim", "wrong_or_invented", "cannot_check"}` for claims when it was not, and `{"caveat", "omitted"}` for caveats. `cannot_check` is high when a claim cannot be checked from general knowledge (too recent, too specific or private), which is different from looking wrong. When evidence was given, the script also picks out the output lines that look like errors, warnings, failures, skips or limits, and adds `{"evidence_line", "left_out"}` for each: how likely it is that the draft leaves out that line when the user should be told. You can add your own `evidence: <exact output line>` lines to `claims.txt` too. Each item also has `unsure`: the names of its scores that fall between 0.3 and 0.7 (empty when Jev was clear-cut on it).
 3. Act on every score over 0.5:
    - `unsupported`: this only matters for claims about the work itself (something run, found, changed or verified). For those, add the real output that shows it to `evidence.txt`; if you cannot, soften or drop the claim. A general-knowledge claim (not about the work) that scores `unsupported` high but `wrong_or_invented` at or below 0.5 is fine: keep it.
    - `contradicted`: re-check the claim. If it is wrong, correct the draft. If the evidence just does not show the relevant part, add the output that does.
-   - `wrong_or_invented`: re-check the claim. Correct it if it is wrong; if it is right but Jev cannot tell, add how you know it (for example, run a command that shows it and switch to checking with `--evidence`), or soften or drop it.
+   - `wrong_or_invented` with `cannot_check` at or below 0.5: Jev thinks the claim is wrong. Re-check it and correct it if it is wrong; if it is right, add how you know it (for example, run a command that shows it and switch to checking with `--evidence`), or soften or drop it.
+   - `wrong_or_invented` with `cannot_check` over 0.5: Jev cannot verify the claim (too recent, specific or private); that is not the same as wrong. If you have a source (a fetched page, a file, a command), add it to `evidence.txt` and check again with `--evidence`. If not, keep the claim if you are confident, and make it a review point in step 5 so the user confirms it.
+   - `left_out` on an `evidence_line` over 0.5: the draft leaves out that part of the output. Mention it in the draft.
    - `omitted`: if the caveat is real and the user should know it, add it to the draft.
-   - Use `unbacked_handling` to choose how to fix claims you cannot back up. If it is `hedged` or `stated_as_fact`, do not just reword: either show what backs the claim, or say plainly that you could not check it, or remove it. Never turn a hedge into a firmer statement without new evidence.
 
-A claim counts as failing if `contradicted` or `wrong_or_invented` is over 0.5, or if it is about the work and `unsupported` is over 0.5. A caveat fails if `omitted` is over 0.5.
+A claim counts as failing if `contradicted` is over 0.5, if `wrong_or_invented` is over 0.5 while `cannot_check` is at or below 0.5, or if it is about the work and `unsupported` is over 0.5. A claim Jev cannot check is not failing; it becomes a review point. A caveat fails if `omitted` is over 0.5, and an evidence line fails if `left_out` is over 0.5.
 
 **Follow-up round (at most one).** Put only the failing items into `followup.txt` and run with `--claims followup.txt`. Each follow-up must rest on something new: added output in `evidence.txt` or a corrected or added sentence in the draft. Never reword a claim or caveat just to get a better score.
 
 **Final check.** Run the step 3 command once more.
-- If it passes, send.
-- If it still fails but no diagnosed item is failing any more, the overall question is not pointing at anything concrete. Send the answer, report the overall scores and that every claim and caveat passes on its own, and do not revise further.
-- If some item still fails, send the revised answer anyway, say which scores are below the bar, and name the items still flagged.
+- If `verdict` is `pass` and it is not shaky, send.
+- If `verdict` is `pass` but it is shaky, find where: run the diagnose step (claims and 2-4 likely caveats) once, without revising. The items whose scores fall between 0.3 and 0.7, or above 0.5, are the review points for step 5. Then send.
+- If it still fails but no diagnosed item is failing any more, the overall question is not pointing at anything concrete. Send the answer, say that every claim and caveat passes on its own, and do not revise further.
+- If some item still fails, send the revised answer anyway and name, in plain words, what is still flagged.
 
 ## 5. Send
 
-Send the final answer with a one-line note of the Jev scores.
+Send the final answer with a short Jev note for a busy human, who only needs to know what to look at:
+- Not shaky: one line, for example "Jev check: passed, no concerns." or "Jev check: passed after 1 revision, no concerns." Nothing more.
+- Shaky, or still failing after revision: one line saying so, then at most 3 review points, worst first. Each point quotes the sentence from the answer (or names the missing point) and says in plain words what is doubtful and what the user should check, for example:
+  - a claim nothing shows: "Nothing I ran shows the export finished; I took that from the notification."
+  - a claim Jev doubted: "Jev wasn't sure '2 h 38 min' is right: the calculation gives 2:37:30, so it's rounded."
+  - a claim Jev can't verify: "Jev can't verify the 2026 price (too recent for it); please confirm it."
+  - a part of the output left out: "The output also says 'Exit code 137', which the answer doesn't mention."
+  - a missing point: "Worth adding: the range assumes the remaining tasks run as fast as recent ones."
+  - clarity: "Jev couldn't decide whether this is clear enough; skim it."
+- Whenever there are review points, end with this line: "Note: Jev only checks the points Claude puts to it. It cannot find other problems on its own, and it does not judge whether the advice itself is good."
+- No scores, no check names, no JSON. Give numbers only if the user asks.
 
 If the script fails, say so with its error message and send the answer unchecked. Two failures have a known cause:
 - A proxy or connection error (for example `403`, `Tunnel connection failed`, `connection refused`): `api.typesafe.ai` isn't allowed yet. Tell the user to add it under Settings > Capabilities on claude.ai, then start a new chat.
@@ -85,33 +98,8 @@ If the script fails, say so with its error message and send the answer unchecked
 
 ```python
 #!/usr/bin/env python3
-"""jev-check.py — score a draft answer with TypeSafe's Jev model.
-
-Usage:
-  python3 jev-check.py --request r.txt --draft d.txt [--evidence e.txt]
-  python3 jev-check.py --request r.txt --draft d.txt [--evidence e.txt] --claims c.txt
-    (breakdown: one JSON line per item, worst first. Lines in c.txt are claims;
-     lines starting "caveat:" are checked as possible omissions from the draft.
-     Claims are always checked for looking wrong or invented, and with evidence also
-     for being contradicted or unsupported by it. A final line reports how the draft
-     handles things it cannot back up; it is guidance only, not a pass/fail score)
-
-API key: $TYPESAFE_API_KEY, or a line TYPESAFE_API_KEY=... in ~/.claude/jev.env.
-With --no-key, no Authorization header is sent: use this in Claude cloud sessions
-where a network secret for api.typesafe.ai makes the proxy attach the key.
-
-Output (stdout, one JSON line):
-  {"model": "...", "addresses_request": 0.93, "contradicted_by_evidence": 0.04,
-   "hidden_errors": 0.08, "unsupported_claims": 0.12, "clarity": 1.71,
-   "clarity_confusing": 0.02, "missing_caveat": 0.1}
-contradicted_by_evidence and hidden_errors are null when no evidence file is given.
-Without evidence, unsupported_claims is the higher of two checks, listed in
-"unsupported_parts": wrong_or_invented and unshown_work.
-Evidence over 30,000 characters is trimmed to its first and last 15,000.
-
-Exit codes: 0 ok, 1 bad input or missing key, 2 API/network error.
-Standard library only.
-"""
+"""jev-check.py: score a draft answer with TypeSafe's Jev model (see the jev-check skill).
+Key from $TYPESAFE_API_KEY. Exit codes: 0 ok, 1 bad input or missing key, 2 API/network error."""
 import argparse
 import json
 import os
@@ -121,7 +109,7 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-SCRIPT_VERSION = "6"  # bump whenever this script changes; the skill rewrites older copies
+SCRIPT_VERSION = "9"  # bump whenever this script changes; the skill rewrites older copies
 ENDPOINT = "https://api.typesafe.ai/v1/systemone"
 MODEL = "jev-latest"
 
@@ -143,16 +131,8 @@ def read_text(path, label):
 
 def load_key():
     key = os.environ.get("TYPESAFE_API_KEY", "").strip()
-    if key:
-        return key
-    env_file = Path.home() / ".claude" / "jev.env"
-    if env_file.is_file():
-        for line in env_file.read_text().splitlines():
-            m = re.match(r'^\s*TYPESAFE_API_KEY\s*=\s*"?([^"\s]+)"?\s*$', line)
-            if m:
-                key = m.group(1)
     if not key:
-        fail("API key missing: set TYPESAFE_API_KEY or add it to ~/.claude/jev.env", 1)
+        fail("API key missing: set TYPESAFE_API_KEY", 1)
     return key
 
 
@@ -165,6 +145,31 @@ def trim_evidence(text):
         return text
     half = MAX_EVIDENCE // 2
     return text[:half] + "\n...[middle of log omitted]...\n" + text[-half:]
+
+
+UNSURE_LOW, UNSURE_HIGH = 0.3, 0.7
+
+ALERT = re.compile(r"error|warn|fail|exception|traceback|killed|timed? ?out|denied|not found|"
+                   r"exit (code )?[1-9]|skipp|refus|abort|gap|limit", re.I)
+MAX_EVIDENCE_LINES = 8
+
+
+def alert_lines(evidence):
+    """Output lines that look like errors, warnings, failures, skips or limits."""
+    seen, picked = set(), []
+    for line in evidence.splitlines():
+        line = line.strip()
+        if not line or line.startswith("$") or not ALERT.search(line) or line in seen:
+            continue
+        seen.add(line)
+        picked.append(line[:300])
+        if len(picked) == MAX_EVIDENCE_LINES:
+            break
+    return picked
+
+
+def is_unsure(value):
+    return value is not None and UNSURE_LOW <= value <= UNSURE_HIGH
 
 
 def noul(instructions, yes, no):
@@ -238,12 +243,25 @@ def build_claims_body(request, draft, evidence, items):
                 f"Does draft_answer fail to tell the user {c}, when the user should be told?",
                 "The draft omits or understates this and the user should know",
                 "The draft states it plainly, or the user does not need to be told")
+        elif kind == "evidence":
+            questions[k + "_left_out"] = noul(
+                f'Does draft_answer leave out this part of the output, when the user should '
+                f'be told about it: "{c}"',
+                "The draft does not mention it, and the user should know",
+                "The draft mentions it, or it does not matter to the user")
         else:
             questions[k + "_wrong"] = noul(
                 f'Does this claim from the draft look wrong or made up: "{c}"',
                 "The claim looks wrong or made up",
                 "The claim looks correct and well founded")
-        if kind != "caveat" and evidence is not None:
+            questions[k + "_cannot_check"] = noul(
+                f"Is this claim from the draft something that cannot be checked from "
+                f"well-established general knowledge, for example a recent price, version, "
+                f"release or date, or a detail of the user's own systems: \"{c}\"",
+                "It cannot be checked from general knowledge: it is too recent, too specific "
+                "or private",
+                "It can be checked from well-established general knowledge")
+        if kind == "claim" and evidence is not None:
             questions[k + "_contradicted"] = noul(
                 f'Does the evidence contradict this claim from the draft: "{c}"',
                 "The evidence contradicts it",
@@ -252,22 +270,6 @@ def build_claims_body(request, draft, evidence, items):
                 f'Is this claim from the draft unsupported by the evidence: "{c}"',
                 "Nothing in the evidence supports it",
                 "The evidence supports it")
-    questions["unbacked_handling"] = {
-        "type": "choice",
-        "instructions": "How does draft_answer handle things it cannot back up, meaning "
-                        "things not shown in evidence (when evidence is given) and not "
-                        "well-established general knowledge?",
-        "criteria": {
-            "all_backed": "Everything it states is shown in the evidence or is "
-                          "well-established knowledge",
-            "left_out": "It leaves out what it cannot back up and does not mention it",
-            "flagged_unknown": "It says plainly that it does not know or could not check "
-                               "something",
-            "hedged": "It states something it cannot back up but softens it, for example "
-                      "with probably, roughly or may",
-            "stated_as_fact": "It states something it cannot back up as plain fact",
-        },
-    }
     return {"model": MODEL, "state": state, "questions": questions}
 
 
@@ -278,12 +280,10 @@ def main():
     ap.add_argument("--evidence", help="file with commands and their output")
     ap.add_argument("--claims", help="file with one draft claim per line: per-claim breakdown")
     ap.add_argument("--endpoint", default=ENDPOINT, help=argparse.SUPPRESS)
-    ap.add_argument("--no-key", action="store_true",
-                    help="send no key; a proxy (network secret) attaches it")
     ap.add_argument("--timeout", type=float, default=45, help="seconds (default 45)")
     args = ap.parse_args()
 
-    key = None if args.no_key else load_key()
+    key = load_key()
     request = read_text(args.request, "request file")
     draft = read_text(args.draft, "draft file")
     evidence = trim_evidence(read_text(args.evidence, "evidence file")) if args.evidence else None
@@ -297,15 +297,20 @@ def main():
                 continue
             if line.lower().startswith("caveat:"):
                 claims.append(("caveat", line[7:].strip()))
+            elif line.lower().startswith("evidence:"):
+                if evidence is not None:
+                    claims.append(("evidence", line[9:].strip()))
             else:
                 claims.append(("claim", line))
+        if evidence is not None:
+            given = {c for kind, c in claims if kind == "evidence"}
+            claims += [("evidence", l) for l in alert_lines(evidence) if l not in given]
         body = build_claims_body(request, draft, evidence, claims)
     else:
         body = build_body(request, draft, evidence)
     data = json.dumps(body).encode("utf-8")
-    headers = {"Content-Type": "application/json; charset=utf-8"}
-    if key:
-        headers["Authorization"] = f"Bearer {key}"
+    headers = {"Content-Type": "application/json; charset=utf-8",
+               "Authorization": f"Bearer {key}"}
     req = urllib.request.Request(args.endpoint, data=data, method="POST", headers=headers)
     try:
         with urllib.request.urlopen(req, timeout=args.timeout) as r:
@@ -334,23 +339,24 @@ def main():
             k = f"c{i:02d}"
             if kind == "caveat":
                 rows.append({"caveat": c, "omitted": get(k + "_omitted", "noul", 3)})
+            elif kind == "evidence":
+                rows.append({"evidence_line": c, "left_out": get(k + "_left_out", "noul", 3)})
             elif evidence is None:
-                rows.append({"claim": c, "wrong_or_invented": get(k + "_wrong", "noul", 3)})
+                rows.append({"claim": c, "wrong_or_invented": get(k + "_wrong", "noul", 3),
+                             "cannot_check": get(k + "_cannot_check", "noul", 3)})
             else:
                 rows.append({"claim": c,
                              "contradicted": get(k + "_contradicted", "noul", 3),
                              "unsupported": get(k + "_unsupported", "noul", 3),
-                             "wrong_or_invented": get(k + "_wrong", "noul", 3)})
-        rows.sort(key=lambda r: max(v for v in r.values() if isinstance(v, float)),
+                             "wrong_or_invented": get(k + "_wrong", "noul", 3),
+                             "cannot_check": get(k + "_cannot_check", "noul", 3)})
+        for r in rows:
+            r["unsure"] = [k for k, v in r.items() if isinstance(v, float) and is_unsure(v)]
+        rows.sort(key=lambda r: max(v for k, v in r.items()
+                                    if isinstance(v, float) and k != "cannot_check"),
                   reverse=True)
         for r in rows:
             print(json.dumps(r))
-        h = answers.get("unbacked_handling") or {}
-        probs = h.get("probabilities") or {}
-        if not probs:
-            fail("response is missing answer 'unbacked_handling'", 2)
-        print(json.dumps({"unbacked_handling": max(probs, key=probs.get),
-                          "probabilities": {k: round(float(v), 3) for k, v in probs.items()}}))
         return
 
     out = {
@@ -376,6 +382,50 @@ def main():
     if "0" not in probs:
         fail("response is missing clarity probabilities", 2)
     out["clarity_confusing"] = round(float(probs["0"]), 3)
+    unsure = []
+    checked = dict(out)
+    checked.update(out.get("unsupported_parts") or {})
+    for k in ("addresses_request", "contradicted_by_evidence", "hidden_errors",
+              "unsupported_claims", "wrong_or_invented", "unshown_work", "missing_caveat"):
+        if k in checked and is_unsure(checked[k]):
+            if k == "unsupported_claims" and "unsupported_parts" in out:
+                continue  # its parts are listed instead
+            unsure.append({"check": k, "value": checked[k]})
+    if max(float(v) for v in probs.values()) < UNSURE_HIGH:
+        unsure.append({"check": "clarity", "value": out["clarity"]})
+    out["unsure"] = unsure
+
+    # Apply the skill's limits (step 4) so the verdict and its shakiness come from code.
+    failed = []
+    if out["addresses_request"] < 0.7:
+        failed.append("addresses_request")
+    for k in ("contradicted_by_evidence", "hidden_errors"):
+        if out[k] is not None and out[k] > 0.5:
+            failed.append(k)
+    if out["unsupported_claims"] > 0.7:
+        failed.append("unsupported_claims")
+    if out["clarity"] < 1.5 or out["clarity_confusing"] > 0.3:
+        failed.append("clarity")
+    if out["missing_caveat"] > 0.7:
+        failed.append("missing_caveat")
+    unsettled = {u["check"] for u in unsure}
+    if unsettled & {"wrong_or_invented", "unshown_work"}:
+        # only the part over the limit decides unsupported_claims
+        if out["unsupported_claims"] in [u["value"] for u in unsure]:
+            unsettled.add("unsupported_claims")
+    out["verdict"] = "revise" if failed else "pass"
+    out["failed"] = failed
+    if failed:
+        shaky_checks = failed if all(c in unsettled for c in failed) else []
+    else:
+        shaky_checks = sorted(unsettled)
+    out["shaky"] = bool(shaky_checks)
+    out["shaky_because"] = [
+        u for u in unsure
+        if u["check"] in shaky_checks
+        or (u["check"] in ("wrong_or_invented", "unshown_work") and "unsupported_claims" in shaky_checks
+            and u["value"] == out["unsupported_claims"])
+    ]
     print(json.dumps(out))
 
 
