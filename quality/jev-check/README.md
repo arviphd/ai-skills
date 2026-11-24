@@ -33,13 +33,19 @@ Ask for it:
 Check your draft with Jev before you send it.
 ```
 
-To be asked every time, add a line like this to your Claude preferences or
-memory:
+To be asked every time, add this to your `CLAUDE.md` (for Claude Code) or to
+your Claude preferences:
 
-```text
-Before giving the final answer for a task, ask whether to check it with Jev
-first, with the options "Check with Jev" and "Send as is".
+```markdown
+## Jev output check (applies to every session)
+
+Before giving the user a final answer that makes claims (numbers, findings, explanations of why something happened, or recommendations), ask whether they want it checked by Jev first. Use AskUserQuestion with the options "Check with Jev" and "Send as is". Do not ask when the answer only reports mechanical results that tests, CI, git or a command's output already show (committed, pushed, PR opened, checks passed, deployed), for short conversational replies (greetings, yes/no confirmations, one-line clarifying questions), or when the user has said "no Jev check" for this session.
+
+If they choose "Check with Jev", invoke the `jev-check` skill and follow it.
 ```
+
+Claude then skips the question for routine status updates and small talk, and
+you can turn it off for a session by saying "no Jev check".
 
 ## Setup
 
